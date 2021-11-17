@@ -1,68 +1,68 @@
 module JetBrains.Product exposing
     ( Product
-    , Products
-    , default
-    , decodeOne
-    , decode
-    , hasIcon
-    , iconName
+    , empty
+    , paletteOf, codeOf, nameOf
+    , decodeMany
+    , hasIcon, iconName
+    , compare
     )
 
 
 import Dict exposing (Dict)
 import Json.Decode as D
 
-
-type alias Color = { r : Float, g : Float, b : Float}
-type alias Palette = List Color
-type alias Product = { code : String, palette : Palette }
+import JetBrains.Palette as Palette exposing (Palette)
 
 
-type alias Products = Dict String Product
+type Product = Product { code : String, name : String, palette : Palette }
 
 
-type alias Palettes =
-    List
-        { product : String
-        , palette: Palette
-        }
+empty : Product
+empty = Product { code = "", name = "", palette = [] }
 
 
-default = ( "", { code = "", palette = [] } )
+paletteOf : Product -> Palette
+paletteOf (Product { palette }) = palette
 
 
-decodeColor : D.Decoder Color
-decodeColor
-    = D.map3
-            Color
-            (D.field "r" D.int |> D.map (\r -> toFloat r / 255))
-            (D.field "g" D.int |> D.map (\g -> toFloat g / 255))
-            (D.field "b" D.int |> D.map (\b -> toFloat b / 255))
+codeOf : Product -> String
+codeOf (Product { code }) = code
 
-decodeOne : D.Decoder Product
-decodeOne
+
+nameOf : Product -> String
+nameOf (Product { name }) = name
+
+
+decode_ : D.Decoder { code : String, palette : Palette }
+decode_
     = D.map2
         (\code palette -> { code = code, palette = palette })
         (D.field "code" D.string)
-        (D.field "palette" <| D.list decodeColor)
+        (D.field "palette" Palette.decode)
 
 
-decode : D.Decoder Products
-decode =
+decodeMany : D.Decoder (List Product)
+decodeMany =
     D.field "products"
-        <| D.dict decodeOne
+        <| D.map Dict.values
+        <| D.map (Dict.map
+                      (\productName { code, palette } ->
+                           Product { name = productName, code = code, palette = palette }
+                      )
+                 )
+        <| D.dict decode_
 
 
-hasIcon : String -> Bool
+hasIcon : Product -> Bool
 hasIcon product =
     case iconName product of
         Just _ -> True
         Nothing -> False
 
 
-iconName : String -> Maybe String
-iconName product =
-    case product of
+iconName : Product -> Maybe String
+iconName (Product { name }) =
+    case name of
         "JetBrains" -> Just "logojb"
         "Space" -> Just "Space"
         "IntelliJ IDEA" -> Just "IntelliJ-IDEA"
@@ -95,13 +95,6 @@ iconName product =
         _ -> Nothing
 
 
-collectPalettes : Products -> Palettes
-collectPalettes =
-    Dict.toList
-        >> List.map
-            (\(productName, productData) ->
-                { product = productName
-                , palette = productData.palette
-                }
-            )
-        >> List.filter (.product >> hasIcon)
+compare : Product -> Product -> Bool
+compare productA productB =
+    nameOf productA == nameOf productB

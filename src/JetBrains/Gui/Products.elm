@@ -1,4 +1,5 @@
-module JetBrains.Gui.Products exposing (products)
+module JetBrains.Gui.Products exposing
+    (products, whichProduct, products_)
 
 
 import Dict
@@ -7,30 +8,51 @@ import Tron exposing (Tron)
 import Tron.Build as Tron
 import Tron.Style.PanelShape exposing (..)
 
-import JetBrains.Product as Products exposing (Products)
+import WithTron.ValueAt as Value
+
+import JetBrains.Product as Product exposing (Product)
 
 
-products : Products -> Tron Products.Product
-products ps =
+
+products : (Product -> Tron.Face) -> List Product -> Tron Product
+products toIcon = productsM toIcon >> Tron.map (Maybe.withDefault Product.empty)
+
+
+products_ : List Product -> Tron Product
+products_ = products productIcon
+
+
+productsM : (Product -> Tron.Face) -> List Product -> Tron (Maybe Product)
+productsM toIcon ps =
     Tron.choiceBy
         (ps
-            |> Dict.toList
-            |> List.filter (Tuple.first >> Products.hasIcon)
+            |> List.filter Product.hasIcon
             |> Tron.buttons
-            |> List.map (Tron.with (Tron.face << productIcon))
-            |> Tron.toSet Tuple.first
+            |> List.map (Tron.with (Tron.face << toIcon))
+            |> List.map (Tron.map Just)
+            |> Tron.toSet (Maybe.map Product.nameOf >> Maybe.withDefault "--")
         )
-        Products.default
-        (\(nameA, _) (nameB, _) -> nameA == nameB)
-        Tuple.second
+        Nothing
+        (\p1 p2 -> Maybe.map2 Product.compare p1 p2 |> Maybe.withDefault False)
+        identity
     -- |> Tron.shape (rows 4)
     -- |> Tron.expand
 
 
-productIcon : ( String, Products.Product ) -> Tron.Face
-productIcon ( product, _ ) =
+productsM_ : List Product -> Tron (Maybe Product)
+productsM_ = productsM productIcon
+
+
+
+productIcon : Product -> Tron.Face
+productIcon product =
     Tron.iconAt
         [ "assets"
         , "product-logos"
-        , (product |> Products.iconName |> Maybe.withDefault "none") ++ ".svg"
+        , (product |> Product.iconName |> Maybe.withDefault "none") ++ ".svg"
         ]
+
+
+whichProduct : List Product -> List String -> Value.Decoder Product
+whichProduct ps =
+    Value.choiceOf (ps |> List.filter Product.hasIcon)
