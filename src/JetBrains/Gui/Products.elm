@@ -2,8 +2,6 @@ module JetBrains.Gui.Products exposing
     (products, whichProduct, products_)
 
 
-import Dict
-
 import Tron exposing (Tron)
 import Tron.Build as Tron
 import Tron.Style.PanelShape exposing (..)
@@ -33,7 +31,7 @@ productsM toIcon ps =
             |> Tron.toSet (Maybe.map Product.nameOf >> Maybe.withDefault "--")
         )
         Nothing
-        (\p1 p2 -> Maybe.map2 Product.compare p1 p2 |> Maybe.withDefault False)
+        (\p1 p2 -> Maybe.map2 Product.equal p1 p2 |> Maybe.withDefault False)
         identity
     -- |> Tron.shape (rows 4)
     -- |> Tron.expand
@@ -54,5 +52,5 @@ productIcon product =
 
 
 whichProduct : List Product -> List String -> Value.Decoder Product
-whichProduct ps =
-    Value.choiceOf (ps |> List.filter Product.hasIcon)
+whichProduct =
+    Value.choiceOf

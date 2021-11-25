@@ -4,7 +4,8 @@ module JetBrains.Product exposing
     , paletteOf, codeOf, nameOf
     , decodeMany
     , hasIcon, iconName
-    , compare
+    , byName, jetbrainsFirst
+    , equal
     )
 
 
@@ -60,6 +61,19 @@ hasIcon product =
         Nothing -> False
 
 
+byName : Product -> Product -> Order
+byName prodA prodB = compare (nameOf prodA) (nameOf prodB)
+
+
+jetbrainsFirst : Product -> Product -> Order
+jetbrainsFirst prodA prodB =
+    case nameOf prodA of
+        "JetBrains" -> LT
+        "jetbrains" -> LT
+        "Jetbrains" -> LT
+        _ -> byName prodA prodB
+
+
 iconName : Product -> Maybe String
 iconName (Product { name }) =
     case name of
@@ -95,6 +109,6 @@ iconName (Product { name }) =
         _ -> Nothing
 
 
-compare : Product -> Product -> Bool
-compare productA productB =
+equal : Product -> Product -> Bool
+equal productA productB =
     nameOf productA == nameOf productB
