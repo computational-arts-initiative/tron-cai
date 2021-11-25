@@ -26,7 +26,7 @@ productsM : (Product -> Tron.Face) -> List Product -> Tron (Maybe Product)
 productsM toIcon ps =
     Tron.choiceBy
         (ps
-            |> List.filter Product.hasIcon
+            --|> List.filter Product.hasIcon
             |> Tron.buttons
             |> List.map (Tron.with (Tron.face << toIcon))
             |> List.map (Tron.map Just)
