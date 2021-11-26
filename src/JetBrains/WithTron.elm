@@ -36,7 +36,7 @@ type alias Model =
 
 type Option msg
     = Products
-         { toPort : List Product.AtPort -> Cmd msg
+         { toPort : List Product -> Cmd msg
          }
     | ListenUpdates
          { transmit : Exp.Out -> Cmd msg
@@ -65,7 +65,7 @@ update options action _ model =
                             }
                         , Cmd.batch
                             [ prevCmd
-                            , toPort <| List.map Product.toPort <| products
+                            , toPort products
                             ]
                         )
                     _ -> ( prevModel, prevCmd )
