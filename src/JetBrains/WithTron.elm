@@ -1,5 +1,6 @@
 module JetBrains.WithTron exposing
-    ( PortProduct
+    ( Program
+    , PortProduct
     , Option(..)
     , element
     , outToStrings
@@ -24,9 +25,11 @@ import JetBrains.Product as Product exposing (Product)
 import JetBrains.Kraken as Kraken
 
 
+type alias Program model msg = WithTron.Program () ( model, Model ) (Action msg)
+
+
 type Action msg
-    = NoOp
-    | ProductsReady (Result Http.Error (List Product))
+    = ProductsReady (Result Http.Error (List Product))
     | ToUser msg
 
 
@@ -34,13 +37,8 @@ type alias PortProduct =
     { name : String, palette : List { red : Float, green : Float, blue : Float, alpha : Float }}
 
 
-type alias Blend = ()
-
-
 type alias Model =
-    { products : List Product
-    , blends : List Blend
-    }
+    { products : List Product }
 
 
 type Option msg
@@ -58,7 +56,7 @@ type Option msg
 
 init : List (Option msg) -> (Model, Cmd (Action msg))
 init options =
-    ( { products = [], blends = [] }
+    ( { products = [] }
     , Kraken.requestProducts
         |> Cmd.map ProductsReady
     )
@@ -97,7 +95,7 @@ element
     :  List (Option msg)
     -> Render.Target
     -> (Tree () -> Model -> Tron msg)
-    -> WithTron.Program () Model (Action msg)
+    -> Program () msg
 element options target for =
     WithTron.element
         target
@@ -114,13 +112,14 @@ element options target for =
                 )
                 Communication.none
         )
-        { for = \tree model -> for tree model |> Tron.map ToUser
-        , init = always <| init options
+        { for = \tree ( _, model ) -> for tree model |> Tron.map ToUser
+        , init = always <| Tuple.mapFirst (Tuple.pair ()) <| init options
         , view = \_ _ -> Html.div [] []
         , update =
-            \msg tree model ->
+            \msg tree ( _, model ) ->
                 update options msg tree model
                    |> Tuple.mapSecond (Cmd.map ToUser)
+                   |> Tuple.mapFirst (Tuple.pair ())
         , subscriptions =
             \_ _ -> Sub.none
         }
