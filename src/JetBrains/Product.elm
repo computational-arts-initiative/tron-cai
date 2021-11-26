@@ -1,15 +1,17 @@
 module JetBrains.Product exposing
-    ( Product
+    ( Product, AtPort
     , empty
     , paletteOf, codeOf, nameOf
     , decodeMany
     , hasIcon, iconName
     , byName, jetbrainsFirst
     , equal
+    , toPort
     )
 
 
-import Dict exposing (Dict)
+import Color
+import Dict
 import Json.Decode as D
 
 import JetBrains.Palette as Palette exposing (Palette)
@@ -112,3 +114,15 @@ iconName (Product { name }) =
 equal : Product -> Product -> Bool
 equal productA productB =
     nameOf productA == nameOf productB
+
+
+type alias AtPort =
+    { name : String, palette : List { red : Float, green : Float, blue : Float, alpha : Float }}
+
+
+toPort : Product -> AtPort
+toPort product =
+    { name = nameOf product
+    , palette = paletteOf product
+                     |> List.map Color.toRgba
+    }

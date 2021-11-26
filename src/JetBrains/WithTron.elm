@@ -1,6 +1,5 @@
 module JetBrains.WithTron exposing
     ( Program
-    , PortProduct
     , Option(..)
     , element
     , outToStrings
@@ -9,8 +8,6 @@ module JetBrains.WithTron exposing
 
 import Http
 import Html
-import Color
-import Task
 
 import Tron.Tree exposing (Tree)
 import Tron.Tree.Expose.Data as Exp
@@ -25,16 +22,12 @@ import JetBrains.Product as Product exposing (Product)
 import JetBrains.Kraken as Kraken
 
 
-type alias Program model msg = WithTron.Program () ( model, Model ) (Action msg)
+type alias Program = WithTron.Program () Model Action
 
 
-type Action msg
-    = ProductsReady (Result Http.Error (List Product))
-    | ToUser msg
-
-
-type alias PortProduct =
-    { name : String, palette : List { red : Float, green : Float, blue : Float, alpha : Float }}
+type Action
+    = NoOp
+    | ProductsReady (Result Http.Error (List Product))
 
 
 type alias Model =
@@ -43,18 +36,15 @@ type alias Model =
 
 type Option msg
     = Products
-         { onReceive : List Product -> msg
-         , onError : Http.Error -> msg
-         , toPort : List PortProduct -> Cmd msg
+         { toPort : List Product.AtPort -> Cmd msg
          }
-    | Blends
-         {}
     | ListenUpdates
-         { transmit : Exp.Out -> Cmd msg }
+         { transmit : Exp.Out -> Cmd msg
+         }
 
 
 
-init : List (Option msg) -> (Model, Cmd (Action msg))
+init : List (Option msg) -> (Model, Cmd Action)
 init options =
     ( { products = [] }
     , Kraken.requestProducts
@@ -62,23 +52,20 @@ init options =
     )
 
 
-update : List (Option msg) -> Action msg -> Tree () -> Model -> (Model, Cmd msg)
+update : List (Option msg) -> Action -> Tree () -> Model -> (Model, Cmd msg)
 update options action _ model =
     options
         |> List.foldl
            (\option ( prevModel, prevCmd ) ->
                 case ( option, action ) of
-                    ( Products { onReceive, toPort }, ProductsReady (Ok products) ) ->
+                    ( Products { toPort }, ProductsReady (Ok products) ) ->
                         (
                             { prevModel
                             | products = products
                             }
                         , Cmd.batch
                             [ prevCmd
-                            , onReceive products
-                                 |> Task.succeed
-                                 |> Task.perform identity
-                            , toPort <| List.map productToPort <| products
+                            , toPort <| List.map Product.toPort <| products
                             ]
                         )
                     _ -> ( prevModel, prevCmd )
@@ -91,11 +78,16 @@ outToStrings out =
     ( out.update.labelPath, out.update.stringValue )
 
 
+
+silence : Cmd msg -> Cmd Action
+silence = Cmd.map <| always NoOp
+
+
 element
     :  List (Option msg)
     -> Render.Target
-    -> (Tree () -> Model -> Tron msg)
-    -> Program () msg
+    -> (Tree () -> Model -> Tree ())
+    -> Program
 element options target for =
     WithTron.element
         target
@@ -106,28 +98,23 @@ element options target for =
                          ListenUpdates { transmit }
                              -> Communication.sendJson
                                    { ack = always Cmd.none
-                                   , transmit = transmit >> Cmd.map ToUser
+                                   , transmit = transmit >> silence
                                    }
                          _ -> prev
                 )
                 Communication.none
         )
-        { for = \tree ( _, model ) -> for tree model |> Tron.map ToUser
-        , init = always <| Tuple.mapFirst (Tuple.pair ()) <| init options
+        { for =
+              \tree model ->
+                  for tree model
+                      |> Tron.lift
+                      |> Tron.map (always NoOp)
+        , init = always <| init options
         , view = \_ _ -> Html.div [] []
         , update =
-            \msg tree ( _, model ) ->
+            \msg tree model ->
                 update options msg tree model
-                   |> Tuple.mapSecond (Cmd.map ToUser)
-                   |> Tuple.mapFirst (Tuple.pair ())
+                   |> Tuple.mapSecond silence
         , subscriptions =
             \_ _ -> Sub.none
         }
-
-
-productToPort : Product -> PortProduct
-productToPort product =
-    { name = Product.nameOf product
-    , palette = Product.paletteOf product
-                     |> List.map Color.toRgba
-    }
