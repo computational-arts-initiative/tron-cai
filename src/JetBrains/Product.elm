@@ -146,12 +146,30 @@ equal productA productB =
 
 
 type alias AtPort =
-    { name : String, palette : List { red : Float, green : Float, blue : Float, alpha : Float }}
+    { name : String
+    , palette :
+        List
+            { red : Float, green : Float, blue : Float, alpha : Float, hex : String }
+    }
 
 
 toPort : Product -> AtPort
 toPort product =
     { name = nameOf product
-    , palette = paletteOf product
-                     |> List.map Color.toRgba
+    , palette =
+         paletteOf product
+            |> List.map
+                (\(color, maybeHex) ->
+                    let
+                        rgba = Color.toRgba color
+                    in
+                        { red = rgba.red
+                        , green = rgba.green
+                        , blue = rgba.blue
+                        , alpha = rgba.alpha
+                        , hex = maybeHex
+                                  |> Maybe.map Palette.hexToString
+                                  |> Maybe.withDefault ""
+                        }
+               )
     }
