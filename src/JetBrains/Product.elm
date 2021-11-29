@@ -149,7 +149,7 @@ type alias AtPort =
     { name : String
     , palette :
         List
-            { red : Float, green : Float, blue : Float, alpha : Float, hex : String }
+            { red : Float, green : Float, blue : Float, alpha : Float, hex : String, rgba : String }
     }
 
 
@@ -170,6 +170,7 @@ toPort product =
                         , hex = maybeHex
                                   |> Maybe.map Palette.hexToString
                                   |> Maybe.withDefault ""
+                        , rgba = Color.toCssString color
                         }
                )
     }
