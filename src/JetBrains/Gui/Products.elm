@@ -1,5 +1,5 @@
 module JetBrains.Gui.Products exposing
-    (products, whichProduct, products_)
+    (products, whichProduct, productsStrings, products_)
 
 
 import Tron exposing (Tron)
@@ -40,6 +40,18 @@ productsM toIcon ps =
 productsM_ : List Product -> Tron (Maybe Product)
 productsM_ = productsM productIcon
 
+
+productsStrings : Product -> List Product -> Tron Product
+productsStrings current productsValues =
+    Tron.strings
+        (productsValues |> List.map Product.nameOf)
+        (Product.nameOf current)
+        (\name ->
+             productsValues
+                 |> List.filter (\p -> Product.nameOf p == name)
+                 |> List.head
+                 |> Maybe.withDefault current
+        )
 
 
 productIcon : Product -> Tron.Face

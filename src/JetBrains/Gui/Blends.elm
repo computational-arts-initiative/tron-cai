@@ -1,5 +1,5 @@
 module JetBrains.Gui.Blends exposing
-    (blends, blends_, whichBlend)
+    (blends, blends_, blendsStrings, whichBlend)
 
 
 
@@ -35,6 +35,14 @@ blendsM toIcon ps =
         identity
     -- |> Tron.shape (rows 4)
     -- |> Tron.expand
+
+
+blendsStrings : Blend -> List Blend -> Tron Blend
+blendsStrings current blendValues =
+    Tron.strings
+        (blendValues |> List.map Blend.toString)
+        (Blend.toString current)
+        (Blend.fromString >> Maybe.withDefault current)
 
 
 blendsM_ : List Blend -> Tron (Maybe Blend)

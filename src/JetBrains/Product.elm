@@ -4,7 +4,7 @@ module JetBrains.Product exposing
     , paletteOf, codeOf, nameOf
     , decodeMany
     , hasIcon, iconName
-    , byName, jetbrainsFirst
+    , byName, jetbrainsFirst, standartSort
     , equal
     , toPort
     )
@@ -65,6 +65,35 @@ hasIcon product =
 
 byName : Product -> Product -> Order
 byName prodA prodB = compare (nameOf prodA) (nameOf prodB)
+
+
+standartSort : (Product -> Int)
+standartSort =
+    nameOf >> bySequence
+        [ "JetBrains", "Space", "IntelliJ IDEA"
+        , "PhpStorm", "PyCharm", "RubyMine"
+        , "WebStorm", "CLion", "DataGrip"
+        , "DataSpell", "AppCode", "GoLand"
+        , "ReSharper", "ReSharper C++", "dotCover"
+        , "dotMemory", "dotPeek", "dotTrace"
+        , "Rider", "TeamCity", "YouTrack"
+        , "Upsource", "Hub", "Kotlin"
+        , "Mono", "MPS", "IntelliJ IDEA Edu"
+        , "PyCharm Edu", "Datalore", "Qodana"
+        ]
+
+
+bySequence : List String -> (String -> Int)
+bySequence sequence =
+     let
+         dict =
+             sequence
+             |> List.indexedMap Tuple.pair
+             |> List.map (\(idx, v) -> (v, idx))
+             |> Dict.fromList
+     in
+         \name -> Dict.get name dict |> Maybe.withDefault (List.length sequence)
+
 
 
 jetbrainsFirst : Product -> Product -> Order
