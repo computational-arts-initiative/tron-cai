@@ -1,6 +1,6 @@
 module JetBrains.WithTron exposing
     ( Program
-    , Option(..)
+    , CaiPorts(..)
     , element
     , outToStrings
     )
@@ -34,43 +34,32 @@ type alias Model =
     { products : List Product }
 
 
-type Option msg
-    = Products
-         { toPort : List Product -> Cmd msg
-         }
-    | ListenUpdates
-         { transmit : Exp.Out -> Cmd msg
-         }
+type CaiPorts msg
+    = None
+    | SendProducts
+        { toPort : List Product -> Cmd msg
+        }
 
 
-
-init : List (Option msg) -> (Model, Cmd Action)
-init options =
+init : CaiPorts msg -> (Model, Cmd Action)
+init option =
     ( { products = [] }
     , Kraken.requestProducts
         |> Cmd.map ProductsReady
     )
 
 
-update : List (Option msg) -> Action -> Tree () -> Model -> (Model, Cmd msg)
-update options action _ model =
-    options
-        |> List.foldl
-           (\option ( prevModel, prevCmd ) ->
-                case ( option, action ) of
-                    ( Products { toPort }, ProductsReady (Ok products) ) ->
-                        (
-                            { prevModel
-                            | products = products
-                            }
-                        , Cmd.batch
-                            [ prevCmd
-                            , toPort products
-                            ]
-                        )
-                    _ -> ( prevModel, prevCmd )
-           )
-           ( model, Cmd.none )
+update : CaiPorts msg -> Action -> Tree () -> Model -> (Model, Cmd msg)
+update option action _ model =
+    case ( option, action ) of
+        ( SendProducts { toPort }, ProductsReady (Ok products) ) ->
+            (
+                { model
+                | products = products
+                }
+            , toPort products
+            )
+        _ -> ( model, Cmd.none )
 
 
 outToStrings : { a | update : { b | labelPath : List String, stringValue : String } } -> ( List String, String )
@@ -84,36 +73,24 @@ silence = Cmd.map <| always NoOp
 
 
 element
-    :  List (Option msg)
+    :  ( CaiPorts msg, Communication.Ports msg )
     -> Render.Target
     -> (Tree () -> Model -> Tree ())
     -> Program
-element options target for =
+element ( caiPorts, ports ) target for =
     WithTron.element
         target
-        (options
-            |> List.foldl
-                (\option prev ->
-                     case option of
-                         ListenUpdates { transmit }
-                             -> Communication.sendJson
-                                   { ack = always Cmd.none
-                                   , transmit = transmit >> silence
-                                   }
-                         _ -> prev
-                )
-                Communication.none
-        )
+        (ports |> Communication.map (always NoOp))
         { for =
               \tree model ->
                   for tree model
                       |> Tron.lift
                       |> Tron.map (always NoOp)
-        , init = always <| init options
+        , init = always <| init caiPorts
         , view = \_ _ -> Html.div [] []
         , update =
             \msg tree model ->
-                update options msg tree model
+                update caiPorts msg tree model
                    |> Tuple.mapSecond silence
         , subscriptions =
             \_ _ -> Sub.none
