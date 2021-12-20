@@ -6,9 +6,9 @@
 
 Download links:
 
-SSH clone URL: ssh://git@git.jetbrains.team/genart/cai-tron.git
+SSH clone URL: ssh://git@git.jetbrains.team/genart/tron-cai.git
 
-HTTPS clone URL: https://git.jetbrains.team/genart/cai-tron.git
+HTTPS clone URL: https://git.jetbrains.team/genart/tron-cai.git
 
 
 

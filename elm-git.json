@@ -1,0 +1,8 @@
+{
+    "git-dependencies": {
+        "direct": {
+            "https://github.com/computational-arts-initiative/kraken-elm-api.git": "1.1.0"
+        },
+        "indirect": {}
+    }
+}

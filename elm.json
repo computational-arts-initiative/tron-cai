@@ -3,7 +3,7 @@
     "name": "jetbrains/cai-tron",
     "summary": "CAI Tron Helpers",
     "license": "BSD-3-Clause",
-    "version": "2.0.0",
+    "version": "3.1.0",
     "exposed-modules": [
         "JetBrains.Gui.Products",
         "JetBrains.Gui.Blends",
