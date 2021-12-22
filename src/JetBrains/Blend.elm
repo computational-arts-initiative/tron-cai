@@ -2,14 +2,15 @@ module JetBrains.Blend exposing
     ( Blend(..)
     , toString, fromString
     , toLabel
-    , all, basicOnes, forCanvas
+    , all, basicOnes, forCanvas, forCss
     , equal
     , default
     )
 
 
 type Blend
-    = SourceOver
+    = Normal
+    | SourceOver
     | SourceIn
     | SourceOut
     | SourceAtop
@@ -77,6 +78,27 @@ forCanvas =
     ]
 
 
+forCss : List Blend
+forCss =
+    [ Normal
+    , Multiply
+    , Screen
+    , Overlay
+    , Darken
+    , Lighten
+    , ColorDodge
+    , ColorBurn
+    , HardLight
+    , SoftLight
+    , Difference
+    , Exclusion
+    , Hue
+    , Saturation
+    , Color
+    , Luminosity
+    ]
+
+
 basicOnes : List Blend
 basicOnes =
     [ SourceOver
@@ -98,6 +120,7 @@ basicOnes =
 toString : Blend -> String
 toString blend =
     case blend of
+        Normal          -> "normal"
         SourceOver      -> "source-over"
         SourceIn        -> "source-in"
         SourceOut       -> "source-out"
